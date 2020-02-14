@@ -42,11 +42,7 @@ RUN apt-get update \
 # AWS CLI
 # ========================================
 
-# 1.16.117 requires botocore 1.12.86
-# Not sure how to handle this, pipfile and pipfile.lock best
-# See also https://github.com/aws/aws-cli/issues/3892
-
-ENV AWSCLI_VERSION=1.16.95
+ENV AWSCLI_VERSION=1.17.17
 
 RUN python3 -m pip install --upgrade pip \
     && pip3 install pipenv awscli==${AWSCLI_VERSION} \
@@ -56,20 +52,20 @@ RUN python3 -m pip install --upgrade pip \
 # TERRAFORM
 # ========================================
 
-ENV TERRAFORM_VERSION=0.11.10
+ENV TERRAFORM_VERSION=0.12.20
 
 RUN curl -L https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -o terraform.zip \
     && unzip terraform.zip \
     && rm terraform.zip \
-    && mv terraform /usr/local/bin/
-    #&& terraform -install-autocomplete
+    && mv terraform /usr/local/bin/ \
+    && terraform -install-autocomplete
 
 
 # ========================================
 # TERRAGRUNT
 # ========================================
 
-ENV TERRAGRUNT_VERSION=0.16.14
+ENV TERRAGRUNT_VERSION=0.21.13
 
 RUN curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64 -o terragrunt \
     && chmod +x terragrunt \
@@ -80,7 +76,7 @@ RUN curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v${TERR
 # KUBECTL
 # ========================================
 
-ENV KUBECTL_VERSION=1.12.0
+ENV KUBECTL_VERSION=1.17.3
 
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o kubectl \
     && chmod +x kubectl \
