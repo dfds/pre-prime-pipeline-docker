@@ -29,30 +29,21 @@ RUN ssh -T -o "StrictHostKeyChecking no" -o "PubkeyAuthentication no" git@github
 
 
 # ========================================
-# PYTHON
-# ========================================
-
-RUN apt-get update \
-    && apt-get install -y python python-pip python3 python3-pip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-
-# ========================================
 # AWS CLI
 # ========================================
 
-ENV AWSCLI_VERSION=1.17.17
+# Always install newest version
+# Doesn't seem to allow version lock https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
 
-RUN python3 -m pip install --upgrade pip \
-    && pip3 install pipenv awscli==${AWSCLI_VERSION} \
-    && echo "complete -C '$(which aws_completer)' aws" >> ~/.bashrc
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
 
 # ========================================
 # TERRAFORM
 # ========================================
 
-ENV TERRAFORM_VERSION=0.12.20
+ENV TERRAFORM_VERSION=0.12.24
 
 RUN curl -L https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -o terraform.zip \
     && unzip terraform.zip \
@@ -65,7 +56,7 @@ RUN curl -L https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraf
 # TERRAGRUNT
 # ========================================
 
-ENV TERRAGRUNT_VERSION=0.21.13
+ENV TERRAGRUNT_VERSION=0.23.12
 
 RUN curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64 -o terragrunt \
     && chmod +x terragrunt \
@@ -76,7 +67,7 @@ RUN curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v${TERR
 # KUBECTL
 # ========================================
 
-ENV KUBECTL_VERSION=1.17.3
+ENV KUBECTL_VERSION=1.18.2
 
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o kubectl \
     && chmod +x kubectl \
