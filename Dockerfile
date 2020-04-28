@@ -20,7 +20,7 @@ FROM base
 ENV USER root
 
 RUN apt-get update \
-    && apt-get install -y curl unzip git bash-completion jq ssh \
+    && apt-get install -y curl unzip git bash-completion jq ssh groff \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -37,7 +37,11 @@ RUN ssh -T -o "StrictHostKeyChecking no" -o "PubkeyAuthentication no" git@github
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
-    && ./aws/install
+    && ./aws/install \
+    && rm -rf ./aws \
+    && rm awscliv2.zip
+
+ENV AWS_PAGER=""
 
 # ========================================
 # TERRAFORM
