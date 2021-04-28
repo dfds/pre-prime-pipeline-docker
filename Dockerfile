@@ -20,13 +20,18 @@ FROM base
 ENV USER root
 
 RUN apt-get update \
-    && apt-get install -y curl unzip git bash-completion jq ssh groff \
+    && apt-get install -y curl unzip git bash-completion jq ssh groff gnupg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Adding  GitHub public SSH key to known hosts
 RUN ssh -T -o "StrictHostKeyChecking no" -o "PubkeyAuthentication no" git@github.com || true
 
+# ========================================
+# COPY FILES
+# ========================================
+
+ADD src/*.asc /
 
 # ========================================
 # AWS CLI
@@ -35,11 +40,16 @@ RUN ssh -T -o "StrictHostKeyChecking no" -o "PubkeyAuthentication no" git@github
 # Always install newest version
 # Doesn't seem to allow version lock https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
 
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.0.10.zip" -o "awscliv2.zip" \
+ENV AWS_CLI_VERSION=2.2.0
+
+RUN curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip -o awscliv2.zip \
+    && curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip.sig  -o awscliv2.sig \
+    && gpg --import aws-cli.asc \
+    && gpg --verify awscliv2.sig awscliv2.zip \
     && unzip awscliv2.zip \
     && ./aws/install \
     && rm -rf ./aws \
-    && rm awscliv2.zip
+    && rm -f awscliv2.zip aws-cli.asc awscliv2.sig
 
 ENV AWS_PAGER=""
 
@@ -47,14 +57,19 @@ ENV AWS_PAGER=""
 # TERRAFORM
 # ========================================
 
-ENV TERRAFORM_VERSION=0.13.5
+ENV TERRAFORM_VERSION=0.13.7
 
-RUN curl -L https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -o terraform.zip \
-    && unzip terraform.zip \
-    && rm terraform.zip \
+RUN curl -Os https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip \
+    && curl -Os https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS \
+    && curl -Os https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS.sig \
+    && gpg --import hashicorp.asc \
+    && gpg --verify terraform_${TERRAFORM_VERSION}_SHA256SUMS.sig terraform_${TERRAFORM_VERSION}_SHA256SUMS \
+    && grep terraform_${TERRAFORM_VERSION}_linux_amd64.zip terraform_${TERRAFORM_VERSION}_SHA256SUMS > terraform_${TERRAFORM_VERSION}_SHA256SUM \
+    && shasum -a 256 -c terraform_${TERRAFORM_VERSION}_SHA256SUM \
+    && unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip \
+    && rm -f terraform_${TERRAFORM_VERSION}_* hashicorp.asc \
     && mv terraform /usr/local/bin/ \
     && terraform -install-autocomplete
-
 
 # ========================================
 # TERRAGRUNT
@@ -71,11 +86,14 @@ RUN curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v${TERR
 # KUBECTL
 # ========================================
 
-ENV KUBECTL_VERSION=1.18.2
+ENV KUBECTL_VERSION=1.20.6
 
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl -o kubectl \
+    && curl -Os https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl.sha256 \
+    && bash -c 'echo "$(<kubectl.sha256) kubectl" | sha256sum --check' \
     && chmod +x kubectl \
-    && mv kubectl /usr/local/bin/
+    && mv kubectl /usr/local/bin/ \
+    && rm -f kubectl.sha256
 
 
 CMD [ "bash" ]
